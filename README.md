@@ -19,13 +19,13 @@ This will be developed and is likely to change.
 ```bash
 java -jar openapi-generator-cli-4.0.0.jar generate \
     -i my-openapi-spec.json \
-    -t templates/php-psr18 \
+    -t resources/php-psr18 \
     -o generated/php-psr18 \
     -g php \
     --additional-properties=srcBasePath=src
 ```
 
-The templates being developed are under `templates/php-psr18`.
+The templates being developed are under `resources/php-psr18`.
 The templates are taken from
 https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator/src/main/resources/php
 
