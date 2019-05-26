@@ -18,15 +18,17 @@
 
 namespace {{apiPackage}};
 
-//use GuzzleHttp\Client;
-//use GuzzleHttp\ClientInterface;
-//use GuzzleHttp\Exception\RequestException;
-//use GuzzleHttp\Psr7\MultipartStream;
-//use GuzzleHttp\Psr7\Request;
-//use GuzzleHttp\RequestOptions;
-
+// PSR-18
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\RequestExceptionInterface;
+
+// PSR-7
+use Psr\Http\Message\RequestInterface;
+
+// PSR-17
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\UriFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 
 use {{invokerPackage}}\ApiException;
 use {{invokerPackage}}\Configuration;
@@ -409,7 +411,7 @@ use {{invokerPackage}}\ObjectSerializer;
 {{/allParams}}
      *
      * @throws \InvalidArgumentException
-     * @return \GuzzleHttp\Psr7\Request
+     * @return RequestInterface
      */
     protected function {{operationId}}Request({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{^required}} = {{#defaultValue}}{{{.}}}{{/defaultValue}}{{^defaultValue}}null{{/defaultValue}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}})
     {
@@ -624,13 +626,17 @@ use {{invokerPackage}}\ObjectSerializer;
         $operationHost = $operationHosts[$this->hostIndex];
 
         {{/servers.0}}
-        $query = \GuzzleHttp\Psr7\build_query($queryParams);
-
         $requestFactory = $this->getRequestFactory();
 
-        // FIXME: build a URL from a URL factory.
+        // Build a URL from a URI factory.
 
-        $url = {{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath . ($query ? "?{$query}" : '');
+        $uriFactory = $this->getUriFactory();
+
+        $url = $uriFactory->createUri({{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath);
+
+        if ($queryParams) {
+            $url = $url->withQuery($this->buildQuery($queryParams));
+        }
 
         $request = $requestFactory->createRequest('{{httpMethod}}', $url);
 
@@ -638,13 +644,6 @@ use {{invokerPackage}}\ObjectSerializer;
         // There won't be any authentication headers, but content type and agency headers will be needed.
 
         return $request;
-
-        /*return new Request(
-            '{{httpMethod}}',
-            {{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath . ($query ? "?{$query}" : ''),
-            $headers,
-            $httpBody
-        );*/
     }
 
     {{/operation}}
@@ -672,12 +671,27 @@ use {{invokerPackage}}\ObjectSerializer;
     /**
      * Return the PSR-17 request factory.
      * This can be supplied, or (later) found by discovery.
+     *
+     * @return RequestFactoryInterface
      */
     protected function getRequestFactory()
     {
         // FIXME: this is hard-coded discovery.
 
         return \Http\Factory\Discovery\HttpFactory::requestFactory();
+    }
+
+    /**
+     * Return the PSR-17 URI factory.
+     * This can be supplied, or (later) found by discovery.
+     *
+     * @return UriFactoryInterface
+     */
+    protected function getUriFactory()
+    {
+        // FIXME: this is hard-coded discovery.
+
+        return \Http\Factory\Discovery\HttpFactory::uriFactory();
     }
 }
 {{/operations}}
