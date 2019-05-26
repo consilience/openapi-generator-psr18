@@ -13,7 +13,7 @@ current models do not support.
 
 ## Generating the Package
 
-During development, the following commend is used to generate the code.
+During development, the following command is used to generate the code.
 This will be developed and is likely to change.
 
 ```bash
