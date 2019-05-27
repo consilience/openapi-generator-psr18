@@ -168,7 +168,7 @@ use {{invokerPackage}}\ObjectSerializer;
 {{/vendorExtensions.x-group-parameters}}
 {{#servers}}
 {{#-first}}
-     * This oepration contains host(s) defined in the OpenAP spec. Use 'hostIndex' to select the host.
+     * This oepration contains host(s) defined in the OpenAPI spec. Use 'hostIndex' to select the host.
 {{/-first}}
      * URL: {{{url}}}
 {{#-last}}
@@ -188,8 +188,7 @@ use {{invokerPackage}}\ObjectSerializer;
         $request = $this->{{operationId}}Request({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});
 
         try {
-            //$options = $this->createHttpClientOption();
-            try {
+             try {
                 $response = $this->client->sendRequest($request /*, $options*/);
             } catch (RequestExceptionInterface $e) {
                 throw new ApiException(
@@ -223,12 +222,16 @@ use {{invokerPackage}}\ObjectSerializer;
             {{/-first}}
             {{#dataType}}
                 {{^isWildcard}}case {{code}}:{{/isWildcard}}{{#isWildcard}}default:{{/isWildcard}}
+                    // The response body will always be Psr\Http\Message\StreamInterface
+                    
                     if ('{{dataType}}' === '\SplFileObject') {
                         $content = $responseBody; //stream goes to serializer
                     } else {
-                        $content = $responseBody->getContents();
+                        $content = (string)$responseBody;
                     }
 
+                    // FIXME: we should pass in $response->getHeaders() instead of []
+                    
                     return [
                         ObjectSerializer::deserialize($content, '{{dataType}}', []),
                         $response->getStatusCode(),
@@ -522,7 +525,7 @@ use {{invokerPackage}}\ObjectSerializer;
         if (${{paramName}} !== null) {
             {{#isFile}}
             $multipart = true;
-            $formParams['{{baseName}}'] = \GuzzleHttp\Psr7\try_fopen(ObjectSerializer::toFormValue(${{paramName}}), 'rb');
+            $formParams['{{baseName}}'] = $this->tryFopen(ObjectSerializer::toFormValue(${{paramName}}), 'rb');
             {{/isFile}}
             {{^isFile}}
             $formParams['{{baseName}}'] = ObjectSerializer::toFormValue(${{paramName}});
@@ -552,7 +555,7 @@ use {{invokerPackage}}\ObjectSerializer;
         if (isset($_tempBody)) {
             // $_tempBody is the method argument, if present
             if ($headers['Content-Type'] === 'application/json') {
-                $httpBody = \GuzzleHttp\json_encode(ObjectSerializer::sanitizeForSerialization($_tempBody));
+                $httpBody = $this->jsonEncode(ObjectSerializer::sanitizeForSerialization($_tempBody));
             } else {
                 $httpBody = $_tempBody;
             }
@@ -569,11 +572,11 @@ use {{invokerPackage}}\ObjectSerializer;
                 $httpBody = new MultipartStream($multipartContents);
 
             } elseif ($headers['Content-Type'] === 'application/json') {
-                $httpBody = \GuzzleHttp\json_encode($formParams);
+                $httpBody = $this->jsonEncode($formParams);
 
             } else {
                 // for HTTP post (form)
-                $httpBody = \GuzzleHttp\Psr7\build_query($formParams);
+                $httpBody = $this->buildQuery($formParams);
             }
         }
 
@@ -649,6 +652,7 @@ use {{invokerPackage}}\ObjectSerializer;
     {{/operation}}
     /**
      * Create http client option
+     *
      * FIXME: options can be set in a PSR-18 client decorator, as that will have
      * access to all requests and responses as they pass through.
      *
@@ -692,6 +696,113 @@ use {{invokerPackage}}\ObjectSerializer;
         // FIXME: this is hard-coded discovery.
 
         return \Http\Factory\Discovery\HttpFactory::uriFactory();
+    }
+
+    /**
+    * Wrapper for JSON encoding that throws when an error occurs.
+    *
+    * @param mixed $value   The value being encoded
+    * @param int    $options JSON encode option bitmask
+    * @param int    $depth   Set the maximum depth. Must be greater than zero.
+    *
+    * @return string
+    * @throws \InvalidArgumentException if the JSON cannot be encoded.
+    * @link http://www.php.net/manual/en/function.json-encode.php
+    */
+    function jsonEncode($value, $options = 0, $depth = 512)
+    {
+        $json = \json_encode($value, $options, $depth);
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new \InvalidArgumentException(
+                'json_encode error: ' . json_last_error_msg()
+            );
+        }
+
+        return $json;
+    }
+
+    /**
+    * Safely opens a PHP stream resource using a filename.
+    *
+    * When fopen fails, PHP normally raises a warning. This function adds an
+    * error handler that checks for errors and throws an exception instead.
+    *
+    * @param string $filename File to open
+    * @param string $mode     Mode used to open the file
+    *
+    * @return resource
+    * @throws \RuntimeException if the file cannot be opened
+    */
+    function tryFopen($filename, $mode)
+    {
+        $ex = null;
+        set_error_handler(function () use ($filename, $mode, &$ex) {
+            $ex = new \RuntimeException(sprintf(
+                'Unable to open %s using mode %s: %s',
+                $filename,
+                $mode,
+                func_get_args()[1]
+            ));
+        });
+
+        $handle = fopen($filename, $mode);
+        restore_error_handler();
+
+        if ($ex) {
+            /** @var $ex \RuntimeException */
+            throw $ex;
+        }
+
+        return $handle;
+    }
+
+    /**
+    * Build a query string from an array of key value pairs.
+    *
+    * This function can use the return value of parse_query() to build a query
+    * string. This function does not modify the provided keys when an array is
+    * encountered (like http_build_query would).
+    *
+    * @param array     $params   Query string parameters.
+    * @param int|false $encoding Set to false to not encode, PHP_QUERY_RFC3986
+    *                            to encode using RFC3986, or PHP_QUERY_RFC1738
+    *                            to encode using RFC1738.
+    * @return string
+    */
+    function buildQuery(array $params, $encoding = PHP_QUERY_RFC3986)
+    {
+        if (!$params) {
+            return '';
+        }
+        if ($encoding === false) {
+            $encoder = function ($str) { return $str; };
+        } elseif ($encoding === PHP_QUERY_RFC3986) {
+            $encoder = 'rawurlencode';
+        } elseif ($encoding === PHP_QUERY_RFC1738) {
+            $encoder = 'urlencode';
+        } else {
+            throw new \InvalidArgumentException('Invalid type');
+        }
+        $qs = '';
+        foreach ($params as $k => $v) {
+            $k = $encoder($k);
+            if (!is_array($v)) {
+                $qs .= $k;
+                if ($v !== null) {
+                    $qs .= '=' . $encoder($v);
+                }
+                $qs .= '&';
+            } else {
+                foreach ($v as $vv) {
+                    $qs .= $k;
+                    if ($vv !== null) {
+                        $qs .= '=' . $encoder($vv);
+                    }
+                    $qs .= '&';
+                }
+            }
+        }
+        return $qs ? (string) substr($qs, 0, -1) : '';
     }
 }
 {{/operations}}
