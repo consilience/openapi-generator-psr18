@@ -19,6 +19,22 @@ namespace {{invokerPackage}};
  * Do not edit the class manually.
  */
 
+// PSR-7
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\StreamInterface;
+
+// PSR-17
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\UriFactoryInterface;
+
+// HTTPlug discovery (php-http/discovery + adapters)
+use Http\Discovery\Psr17FactoryDiscovery as HttplugFactoryDiscovery;
+use Http\Discovery\Psr18ClientDiscovery as HttplugClientDiscovery;
+
+// HTTP Interop discovery http-interop/http-factory-discovery + adapters
+use Http\Factory\Discovery\HttpFactory as HttpInteropFactoryDiscovery;
+use Http\Factory\Discovery\HttpClient as HttpInteropClientDiscovery;
+
 /**
  * Configuration Class Doc Comment
  * PHP version 5
@@ -51,21 +67,21 @@ class Configuration
      *
      * @var string
      */
-    protected $accessToken = '';
+    protected $accessToken;
 
     /**
      * Username for HTTP basic authentication
      *
      * @var string
      */
-    protected $username = '';
+    protected $username;
 
     /**
      * Password for HTTP basic authentication
      *
      * @var string
      */
-    protected $password = '';
+    protected $password;
 
     /**
      * The host
@@ -82,12 +98,63 @@ class Configuration
     protected $userAgent = '{{#httpUserAgent}}{{{.}}}{{/httpUserAgent}}{{^httpUserAgent}}OpenAPI-Generator/{{#artifactVersion}}{{{.}}}{{/artifactVersion}}{{^artifactVersion}}1.0.0{{/artifactVersion}}/PHP{{/httpUserAgent}}';
 
     /**
+     * The URI factory passed in or auto-discovered
+     *
+     * @var UriFactoryInterface
+     */
+    protected $uriFactory;
+
+    /**
+     * The Request factory passed in or auto-discovered
+     *
+     * @var RequestFactoryInterface
+     */
+    protected $requestFactory;
+
+    /**
+     * The Stream factory passed in or auto-discovered
+     *
+     * @var StreamFactoryInterface
+     */
+    protected $streamFactory;
+
+    /**
      * Constructor
      */
     public function __construct(array $options = [])
     {
         foreach ($options as $name => $value) {
             $this->set($name, $value);
+        }
+
+        // Try some discovery of the URI factory.
+
+        if ($this->uriFactory === null && class_exists(HttplugFactoryDiscovery::class)) {
+            $this->uriFactory = HttplugFactoryDiscovery::findUrlFactory();
+        }
+
+        if ($this->uriFactory === null && class_exists(HttpInteropFactoryDiscovery::class)) {
+            $this->uriFactory = HttpInteropFactoryDiscovery::uriFactory();
+        }
+
+        // Try discovery of the Request factory.
+
+        if ($this->requestFactory === null && class_exists(HttplugFactoryDiscovery::class)) {
+            $this->requestFactory = HttplugFactoryDiscovery::findRequestFactory();
+        }
+
+        if ($this->requestFactory === null && class_exists(HttpInteropFactoryDiscovery::class)) {
+            $this->requestFactory = HttpInteropFactoryDiscovery::requestFactory();
+        }
+
+        // Try discovery of the Stream factory.
+
+        if ($this->streamFactory === null && class_exists(HttplugFactoryDiscovery::class)) {
+            $this->streamFactory = HttplugFactoryDiscovery::findStreamFactory();
+        }
+
+        if ($this->streamFactory === null && class_exists(HttpInteropFactoryDiscovery::class)) {
+            $this->streamFactory = HttpInteropFactoryDiscovery::streamFactory();
         }
     }
 
@@ -407,6 +474,111 @@ class Configuration
     }
 
     /**
+     * Sets the Request factory
+     *
+     * @param RequestFactoryInterface $requestFactory
+     *
+     * @return $this
+     */
+    protected function setRequestFactory(RequestFactoryInterface $requestFactory)
+    {
+        $this->requestFactory = $requestFactory;
+        return $this;
+    }
+
+    /**
+     * Sets Request factory
+     *
+     * @param RequestFactoryInterface $requestFactory
+     *
+     * @return $this new instance
+     */
+    public function withRequestFactory(RequestFactoryInterface $requestFactory)
+    {
+        return $this->with('requestFactory', $requestFactory);
+    }
+
+    /**
+     * Gets Request factory
+     *
+     * @return RequestFactoryInterface
+     */
+    public function getRequestFactory()
+    {
+        return $this->requestFactory;
+    }
+
+    /**
+     * Sets the URI factory
+     *
+     * @param UriFactoryInterface $uriFactory
+     *
+     * @return $this
+     */
+    protected function setUriFactory(UriFactoryInterface $uriFactory)
+    {
+        $this->uriFactory = $uriFactory;
+        return $this;
+    }
+
+    /**
+     * Sets URI factory
+     *
+     * @param UriFactoryInterface $uriFactory
+     *
+     * @return $this new instance
+     */
+    public function withUriFactory(UriFactoryInterface $uriFactory)
+    {
+        return $this->with('uriFactory', $uriFactory);
+    }
+
+    /**
+     * Gets URI factory
+     *
+     * @return UriFactoryInterface
+     */
+    public function getUriFactory()
+    {
+        return $this->uriFactory;
+    }
+
+    /**
+     * Sets the Stream factory
+     *
+     * @param StreamFactoryInterface $streamFactory
+     *
+     * @return $this
+     */
+    protected function setStreamFactory(StreamFactoryInterface $streamFactory)
+    {
+        $this->streamFactory = $streamFactory;
+        return $this;
+    }
+
+    /**
+     * Sets Stream factory
+     *
+     * @param StreamFactoryInterface $streamFactory
+     *
+     * @return $this new instance
+     */
+    public function withStreamFactory(StreamFactoryInterface $streamFactory)
+    {
+        return $this->with('streamFactory', $streamFactory);
+    }
+
+    /**
+     * Gets Stream factory
+     *
+     * @return StreamFactoryInterface
+     */
+    public function getStreamFactory()
+    {
+        return $this->streamFactory;
+    }
+
+    /**
      * Gets the default configuration instance
      *
      * @return Configuration
@@ -443,9 +615,9 @@ class Configuration
         $report .= '    OS: ' . php_uname() . PHP_EOL;
         $report .= '    PHP Version: ' . PHP_VERSION . PHP_EOL;
         $report .= '    The version of the OpenAPI document: {{version}}' . PHP_EOL;
-	    {{#artifactVersion}}
+        {{#artifactVersion}}
         $report .= '    SDK Package Version: {{artifactVersion}}' . PHP_EOL;
-    	{{/artifactVersion}}
+        {{/artifactVersion}}
         $report .= '    Temp Folder Path: ' . self::getDefaultConfiguration()->getTempFolderPath() . PHP_EOL;
 
         return $report;

@@ -24,6 +24,8 @@ use Psr\Http\Client\RequestExceptionInterface;
 
 // PSR-7
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\StreamInterface;
 
 // PSR-17
 use Psr\Http\Message\RequestFactoryInterface;
@@ -69,19 +71,19 @@ use {{invokerPackage}}\ObjectSerializer;
      * @param ClientInterface $client
      * @param Configuration   $config
      * @param HeaderSelector  $selector
-     * @param int             $host_index (Optional) host index to select the list of hosts if defined in the OpenAPI spec
+     * @param int             $hostIndex (Optional) host index to select the list of hosts if defined in the OpenAPI spec
      */
     public function __construct(
         ClientInterface $client = null,
         Configuration $config = null,
         HeaderSelector $selector = null,
-        $host_index = 0
+        $hostIndex = 0
     ) {
         // FIXME: use discovery if a client not provided.
         $this->client = $client;
         $this->config = $config ?: new Configuration();
         $this->headerSelector = $selector ?: new HeaderSelector();
-        $this->hostIndex = $host_index;
+        $this->hostIndex = $hostIndex;
     }
 
     /**
@@ -89,9 +91,9 @@ use {{invokerPackage}}\ObjectSerializer;
      *
      * @param  int Host index (required)
      */
-    public function setHostIndex($host_index)
+    public function setHostIndex($hostIndex)
     {
-        $this->hostIndex = $host_index;
+        $this->hostIndex = $hostIndex;
     }
 
     /**
@@ -189,7 +191,7 @@ use {{invokerPackage}}\ObjectSerializer;
 
         try {
              try {
-                $response = $this->client->sendRequest($request /*, $options*/);
+                $response = $this->client->sendRequest($request);
             } catch (RequestExceptionInterface $e) {
                 throw new ApiException(
                     "[{$e->getCode()}] {$e->getMessage()}",
@@ -223,7 +225,7 @@ use {{invokerPackage}}\ObjectSerializer;
             {{#dataType}}
                 {{^isWildcard}}case {{code}}:{{/isWildcard}}{{#isWildcard}}default:{{/isWildcard}}
                     // The response body will always be Psr\Http\Message\StreamInterface
-                    
+
                     if ('{{dataType}}' === '\SplFileObject') {
                         $content = $responseBody; //stream goes to serializer
                     } else {
@@ -355,7 +357,7 @@ use {{invokerPackage}}\ObjectSerializer;
         $request = $this->{{operationId}}Request({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});
 
         return $this->client
-            ->sendAsync($request, $this->createHttpClientOption())
+            ->sendAsync($request)
             ->then(
                 function ($response) use ($returnType) {
                     {{#returnType}}
@@ -551,14 +553,18 @@ use {{invokerPackage}}\ObjectSerializer;
             );
         }
 
-        // for model (json/xml)
+        // For model (json/xml)
+
         if (isset($_tempBody)) {
-            // $_tempBody is the method argument, if present
+            // $_tempBody is the method argument, if present.
+
             if ($headers['Content-Type'] === 'application/json') {
-                $httpBody = $this->jsonEncode(ObjectSerializer::sanitizeForSerialization($_tempBody));
+                $httpBodyText = $this->jsonEncode(ObjectSerializer::sanitizeForSerialization($_tempBody));
             } else {
-                $httpBody = $_tempBody;
+                $httpBodyText = $_tempBody;
             }
+
+            $httpBody = $this->createStream($httpBodyText);
         } elseif (count($formParams) > 0) {
             if ($multipart) {
                 $multipartContents = [];
@@ -568,15 +574,19 @@ use {{invokerPackage}}\ObjectSerializer;
                         'contents' => $formParamValue
                     ];
                 }
+
+                // FIXME: how do we do multiparts with PSR-7?
+                // MultipartStream() is a Guzzle tool.
+
                 // for HTTP post (form)
                 $httpBody = new MultipartStream($multipartContents);
 
             } elseif ($headers['Content-Type'] === 'application/json') {
-                $httpBody = $this->jsonEncode($formParams);
+                $httpBody = $this->createStream($this->jsonEncode($formParams));
 
             } else {
                 // for HTTP post (form)
-                $httpBody = $this->buildQuery($formParams);
+                $httpBody = $this->createStream($this->buildQuery($formParams));
             }
         }
 
@@ -627,75 +637,72 @@ use {{invokerPackage}}\ObjectSerializer;
             throw new \InvalidArgumentException("Invalid index {$this->hostIndex} when selecting the host. Must be less than ".sizeof($operationHosts));
         }
         $operationHost = $operationHosts[$this->hostIndex];
-
         {{/servers.0}}
-        $requestFactory = $this->getRequestFactory();
 
-        // Build a URL from a URI factory.
-
-        $uriFactory = $this->getUriFactory();
-
-        $url = $uriFactory->createUri({{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath);
+        $url = $this->createUri({{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath);
 
         if ($queryParams) {
             $url = $url->withQuery($this->buildQuery($queryParams));
         }
 
-        $request = $requestFactory->createRequest('{{httpMethod}}', $url);
+        $request = $this->createRequest('{{httpMethod}}', $url);
 
-        // TODO: add the body and headers.
-        // There won't be any authentication headers, but content type and agency headers will be needed.
+        if ($headers) {
+            foreach ($headers as $name => $value) {
+                $request = $request->withHeader($name, $value);
+            }
+        }
+
+        // Add the body if set.
+
+        if ($httpBody) {
+            $request = $request->withBody($httpBody);
+        }
 
         return $request;
     }
 
     {{/operation}}
     /**
-     * Create http client option
+     * Return a PSR-7 request.
      *
-     * FIXME: options can be set in a PSR-18 client decorator, as that will have
-     * access to all requests and responses as they pass through.
-     *
-     * @throws \RuntimeException on file opening failure
-     * @return array of http client options
+     * @return RequestInterface
      */
-    protected function createHttpClientOption()
+    protected function createRequest(string $method, $uri): RequestInterface
     {
-        $options = [];
-        if ($this->config->getDebug()) {
-            $options[RequestOptions::DEBUG] = fopen($this->config->getDebugFile(), 'a');
-            if (!$options[RequestOptions::DEBUG]) {
-                throw new \RuntimeException('Failed to open the debug file: ' . $this->config->getDebugFile());
-            }
-        }
+        // Get the factory from Configuration.
 
-        return $options;
+        $requestFactory = $this->config->getRequestFactory();
+
+        return $requestFactory->createRequest($method, $uri);
     }
 
     /**
-     * Return the PSR-17 request factory.
-     * This can be supplied, or (later) found by discovery.
+     * Return a PSR-7 URI.
      *
-     * @return RequestFactoryInterface
+     * @return UriInterface
      */
-    protected function getRequestFactory()
+    protected function createUri(string $uri = ''): UriInterface
     {
-        // FIXME: this is hard-coded discovery.
+        // Get the factory from Configuration.
 
-        return \Http\Factory\Discovery\HttpFactory::requestFactory();
+        $uriFactory = $this->config->getUriFactory();
+
+        return $uriFactory->createUri($uri);
     }
 
     /**
-     * Return the PSR-17 URI factory.
-     * This can be supplied, or (later) found by discovery.
+     * Return a PSR-7 URI.
      *
-     * @return UriFactoryInterface
+     * @return UriInterface
      */
-    protected function getUriFactory()
+    protected function createStream(string $content = ''): StreamInterface
     {
-        // FIXME: this is hard-coded discovery.
+        // Get the factory from Configuration.
 
-        return \Http\Factory\Discovery\HttpFactory::uriFactory();
+        $streamFactory = $this->config->getStreamFactory();
+
+        return $streamFactory->createStream($content);
     }
 
     /**
