@@ -1,4 +1,7 @@
 <?php
+
+namespace {{invokerPackage}};
+
 /**
  * Configuration
  * PHP version 5
@@ -15,8 +18,6 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-
-namespace {{invokerPackage}};
 
 /**
  * Configuration Class Doc Comment
@@ -81,32 +82,65 @@ class Configuration
     protected $userAgent = '{{#httpUserAgent}}{{{.}}}{{/httpUserAgent}}{{^httpUserAgent}}OpenAPI-Generator/{{#artifactVersion}}{{{.}}}{{/artifactVersion}}{{^artifactVersion}}1.0.0{{/artifactVersion}}/PHP{{/httpUserAgent}}';
 
     /**
-     * Debug switch (default set to false)
-     *
-     * @var bool
-     */
-    protected $debug = false;
-
-    /**
-     * Debug file location (log to STDOUT by default)
-     *
-     * @var string
-     */
-    protected $debugFile = 'php://output';
-
-    /**
-     * Debug file location (log to STDOUT by default)
-     *
-     * @var string
-     */
-    protected $tempFolderPath;
-
-    /**
      * Constructor
      */
-    public function __construct()
+    public function __construct(array $options = [])
     {
-        $this->tempFolderPath = sys_get_temp_dir();
+        foreach ($options as $name => $value) {
+            $this->set($name, $value);
+        }
+    }
+
+    /**
+     * FIXME: support two-part (key/value) options
+     *
+     * @param string $name name of the configuration option as lowerSnakeCase
+     * @param mixed $value value to store
+     *
+     * @return $this
+     */
+    protected function set($name, $value)
+    {
+        $setterName = 'set' . ucfirst($name);
+
+        if (method_exists($this, $setterName)) {
+            $this->{$setterName}($value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * FIXME: support two-part (key/value) options
+     *
+     * @param string $name name of the configuration option as lowerSnakeCase
+     * @param mixed $value value to store
+     *
+     * @return $this new instance
+     */
+    public function with($name, $value)
+    {
+        $clone = clone $this;
+        return $clone->set($name, $value);
+    }
+
+    /**
+     * FIXME: support two-part (key/value) options
+     *
+     * @param string $name name of the configuration option as lowerSnakeCase
+     * @param mixed $default value to return on no getter
+     *
+     * @return $mixed
+     */
+    public function get($name, $default = null)
+    {
+        $setterName = 'get' . ucfirst($name);
+
+        if (method_exists($this, $getterName)) {
+            $this->{$getterName}();
+        }
+
+        return $default;
     }
 
     /**
@@ -117,10 +151,25 @@ class Configuration
      *
      * @return $this
      */
-    public function setApiKey($apiKeyIdentifier, $key)
+    protected function setApiKey($apiKeyIdentifier, $key)
     {
         $this->apiKeys[$apiKeyIdentifier] = $key;
         return $this;
+    }
+
+    /**
+     * Sets API key
+     *
+     * @param string $apiKeyIdentifier API key identifier (authentication scheme)
+     * @param string $key              API key or token
+     *
+     * @return $this
+     */
+    public function withApiKey($apiKeyIdentifier, $key)
+    {
+        $clone = clone $this;
+        $clone->apiKeys[$apiKeyIdentifier] = $key;
+        return $clone;
     }
 
     /**
@@ -143,10 +192,25 @@ class Configuration
      *
      * @return $this
      */
-    public function setApiKeyPrefix($apiKeyIdentifier, $prefix)
+    protected function setApiKeyPrefix($apiKeyIdentifier, $prefix)
     {
         $this->apiKeyPrefixes[$apiKeyIdentifier] = $prefix;
         return $this;
+    }
+
+    /**
+     * Sets the prefix for API key (e.g. Bearer)
+     *
+     * @param string $apiKeyIdentifier API key identifier (authentication scheme)
+     * @param string $prefix           API key prefix, e.g. Bearer
+     *
+     * @return $this new instance
+     */
+    public function withApiKeyPrefix($apiKeyIdentifier, $prefix)
+    {
+        $clone = clone $this;
+        $clone->apiKeyPrefixes[$apiKeyIdentifier] = $prefix;
+        return $clone;
     }
 
     /**
@@ -168,10 +232,22 @@ class Configuration
      *
      * @return $this
      */
-    public function setAccessToken($accessToken)
+    protected function setAccessToken($accessToken)
     {
         $this->accessToken = $accessToken;
         return $this;
+    }
+
+    /**
+     * Sets the access token for OAuth
+     *
+     * @param string $accessToken Token for OAuth
+     *
+     * @return $this
+     */
+    public function withAccessToken($accessToken)
+    {
+        return $this->with('accessToken', $accessToken);
     }
 
     /**
@@ -191,10 +267,22 @@ class Configuration
      *
      * @return $this
      */
-    public function setUsername($username)
+    protected function setUsername($username)
     {
         $this->username = $username;
         return $this;
+    }
+
+    /**
+     * Sets the username for HTTP basic authentication
+     *
+     * @param string $username Username for HTTP basic authentication
+     *
+     * @return $this new instance
+     */
+    public function withUsername($username)
+    {
+        return $this->with('username', $username);
     }
 
     /**
@@ -214,10 +302,22 @@ class Configuration
      *
      * @return $this
      */
-    public function setPassword($password)
+    protected function setPassword($password)
     {
         $this->password = $password;
         return $this;
+    }
+
+    /**
+     * Sets the password for HTTP basic authentication
+     *
+     * @param string $password Password for HTTP basic authentication
+     *
+     * @return $this new instance
+     */
+    public function withPassword($password)
+    {
+        return $this->with('password', $password);
     }
 
     /**
@@ -237,10 +337,22 @@ class Configuration
      *
      * @return $this
      */
-    public function setHost($host)
+    protected function setHost($host)
     {
         $this->host = $host;
         return $this;
+    }
+
+    /**
+     * Sets the host
+     *
+     * @param string $host Host
+     *
+     * @return $this new instance
+     */
+    public function withHost($host)
+    {
+        return $this->with('host', $host);
     }
 
     /**
@@ -261,7 +373,7 @@ class Configuration
      * @throws \InvalidArgumentException
      * @return $this
      */
-    public function setUserAgent($userAgent)
+    protected function setUserAgent($userAgent)
     {
         if (!is_string($userAgent)) {
             throw new \InvalidArgumentException('User-agent must be a string.');
@@ -272,6 +384,19 @@ class Configuration
     }
 
     /**
+     * Sets the user agent of the api client
+     *
+     * @param string $userAgent the user agent of the api client
+     *
+     * @throws \InvalidArgumentException
+     * @return $this new instance
+     */
+    public function withUserAgent($userAgent)
+    {
+        return $this->with('userAgent', $userAgent);
+    }
+
+    /**
      * Gets the user agent of the api client
      *
      * @return string user agent
@@ -279,75 +404,6 @@ class Configuration
     public function getUserAgent()
     {
         return $this->userAgent;
-    }
-
-    /**
-     * Sets debug flag
-     *
-     * @param bool $debug Debug flag
-     *
-     * @return $this
-     */
-    public function setDebug($debug)
-    {
-        $this->debug = $debug;
-        return $this;
-    }
-
-    /**
-     * Gets the debug flag
-     *
-     * @return bool
-     */
-    public function getDebug()
-    {
-        return $this->debug;
-    }
-
-    /**
-     * Sets the debug file
-     *
-     * @param string $debugFile Debug file
-     *
-     * @return $this
-     */
-    public function setDebugFile($debugFile)
-    {
-        $this->debugFile = $debugFile;
-        return $this;
-    }
-
-    /**
-     * Gets the debug file
-     *
-     * @return string
-     */
-    public function getDebugFile()
-    {
-        return $this->debugFile;
-    }
-
-    /**
-     * Sets the temp folder path
-     *
-     * @param string $tempFolderPath Temp folder path
-     *
-     * @return $this
-     */
-    public function setTempFolderPath($tempFolderPath)
-    {
-        $this->tempFolderPath = $tempFolderPath;
-        return $this;
-    }
-
-    /**
-     * Gets the temp folder path
-     *
-     * @return string Temp folder path
-     */
-    public function getTempFolderPath()
-    {
-        return $this->tempFolderPath;
     }
 
     /**
@@ -365,7 +421,7 @@ class Configuration
     }
 
     /**
-     * Sets the detault configuration instance
+     * Sets the default configuration instance
      *
      * @param Configuration $config An instance of the Configuration Object
      *
@@ -427,35 +483,35 @@ class Configuration
      */
     public function getHostSettings()
     {
-        return array(
+        return [
         {{#servers}}
-          array(
+          [
             "url" => "{{{url}}}",
             "description" => "{{{description}}}{{^description}}No description provided{{/description}}",
             {{#variables}}
             {{#-first}}
-            "variables" => array(
+            "variables" => [
             {{/-first}}
-              "{{{name}}}" => array(
+              "{{{name}}}" => [
                   "description" => "{{{description}}}{{^description}}No description provided{{/description}}",
                   "default_value" => "{{{defaultValue}}}",
                   {{#enumValues}}
                   {{#-first}}
-                  "enum_values" => array(
+                  "enum_values" => [
                   {{/-first}}
                     "{{{.}}}"{{^-last}},{{/-last}}
                   {{#-last}}
-                  )
+                  ]
                   {{/-last}}
                   {{/enumValues}}
-                ){{^-last}},{{/-last}}
+                ]{{^-last}},{{/-last}}
               {{#-last}}
-              )
+              ]
               {{/-last}}
             {{/variables}}
-          ){{^-last}},{{/-last}}
+          ]{{^-last}},{{/-last}}
         {{/servers}}
-        );
+        ];
     }
 
     /**
@@ -468,7 +524,7 @@ class Configuration
     public function getHostFromSettings($index, $variables = null)
     {
         if (null === $variables) {
-            $variables = array();
+            $variables = [];
         }
 
         $hosts = $this->getHostSettings();
