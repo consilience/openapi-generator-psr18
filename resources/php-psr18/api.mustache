@@ -32,6 +32,9 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
+// Guzzle
+use GuzzleHttp\Client as GuzzleClient;
+
 use {{invokerPackage}}\ApiException;
 use {{invokerPackage}}\Configuration;
 use {{invokerPackage}}\HeaderSelector;
@@ -68,18 +71,26 @@ use {{invokerPackage}}\ObjectSerializer;
     protected $hostIndex;
 
     /**
-     * @param ClientInterface $client
+     * FIXME: think about the client. We need a client that can handle both synchronous and
+     * asynchronous requests. There is no PSR for asyn as yet, and implementations are so
+     * diverse that we need to pick a specific implementaton (Guzzle, I guess). So do we
+     * provide a wrapper that we can put one, the other, or both into? Even when there is a
+     * PSR for promises, it will not be PSR-18, so we would still need two clients I believe.
+     * The wrapper would support both interfaces for PSR-18 and whatever provides async requests.
+     * We cannot do that with generator templates alone. We'll just add them to the configuration,
+     * like the factories to avoid making this a blocker.
+     *
+     * @param ClientInterface|GuzzleClient $client
      * @param Configuration   $config
      * @param HeaderSelector  $selector
      * @param int             $hostIndex (Optional) host index to select the list of hosts if defined in the OpenAPI spec
      */
     public function __construct(
-        ClientInterface $client = null,
+        $client,
         Configuration $config = null,
         HeaderSelector $selector = null,
         $hostIndex = 0
     ) {
-        // FIXME: use discovery if a client not provided.
         $this->client = $client;
         $this->config = $config ?: new Configuration();
         $this->headerSelector = $selector ?: new HeaderSelector();
@@ -191,8 +202,21 @@ use {{invokerPackage}}\ObjectSerializer;
 
         try {
              try {
-                $response = $this->client->sendRequest($request);
+                if ($this->client instanceof ClientInterface) {
+                    // PSR-18 client.
+
+                    $response = $this->client->sendRequest($request);
+                } elseif ($this->client instanceof  GuzzleClient) {
+                    // Guzzle client.
+
+                    $response = $this->client->send($request);
+                } else {
+                    // TODO: No suitable client, so thrown exception.
+                }
             } catch (RequestExceptionInterface $e) {
+                // CHECKME: is this what the Guzzle client would throw too?
+                // This $e->getResponse() - is that PSR-7 or just what the Guzzle exception provides?
+
                 throw new ApiException(
                     "[{$e->getCode()}] {$e->getMessage()}",
                     $e->getCode(),
@@ -202,6 +226,10 @@ use {{invokerPackage}}\ObjectSerializer;
             }
 
             $statusCode = $response->getStatusCode();
+
+            // FIXME: this behavious is not desired, since even 4xx errors may
+            // carry a payload with details of the problem that the application
+            // may need to know.
 
             if ($statusCode < 200 || $statusCode > 299) {
                 throw new ApiException(
@@ -227,13 +255,14 @@ use {{invokerPackage}}\ObjectSerializer;
                     // The response body will always be Psr\Http\Message\StreamInterface
 
                     if ('{{dataType}}' === '\SplFileObject') {
-                        $content = $responseBody; //stream goes to serializer
+                        // Data type maps to "file" in the spec.
+                        $content = $responseBody;
                     } else {
                         $content = (string)$responseBody;
                     }
 
                     // FIXME: we should pass in $response->getHeaders() instead of []
-                    
+
                     return [
                         ObjectSerializer::deserialize($content, '{{dataType}}', []),
                         $response->getStatusCode(),
@@ -248,9 +277,10 @@ use {{invokerPackage}}\ObjectSerializer;
             $returnType = '{{returnType}}';
             $responseBody = $response->getBody();
             if ($returnType === '\SplFileObject') {
-                $content = $responseBody; //stream goes to serializer
+                // Stream goes to deserializer
+                $content = $responseBody;
             } else {
-                $content = $responseBody->getContents();
+                $content = (string)$responseBody;
             }
 
             return [
@@ -355,6 +385,10 @@ use {{invokerPackage}}\ObjectSerializer;
     {
         $returnType = '{{returnType}}';
         $request = $this->{{operationId}}Request({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});
+
+        if (! $this->client instanceof  GuzzleClient) {
+            // TODO: Not a suitable client; throw excpetion.
+        }
 
         return $this->client
             ->sendAsync($request)
