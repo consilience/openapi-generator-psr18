@@ -22,7 +22,8 @@ java -jar openapi-generator-cli-4.0.0.jar generate \
     -t resources/php-psr18 \
     -o generated/php-psr18 \
     -g php \
-    --additional-properties=srcBasePath=src
+    --additional-properties=srcBasePath=src \
+    --additional-properties=variableNamingConvention=camelCase
 ```
 
 The templates being developed are under `resources/php-psr18`.
