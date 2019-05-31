@@ -396,7 +396,19 @@ class ObjectSerializer
         }
 
         if (is_object($data)) {
-            return $data->{$name} ?? null;
+            // Try a property directly first.
+
+            if (property_exists($data, $name)) {
+                return $data->{$name};
+            }
+
+            // Try a getter.
+
+            $getterName = get . ucfirst($name);
+
+            if (method_exists($data, $getterName)) {
+                return $data->{$getterName};
+            }
         }
     }
 }
