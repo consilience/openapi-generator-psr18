@@ -24,10 +24,11 @@ namespace {{modelPackage}};
 {{^isEnum}}
 {{^parentSchema}}
 
-use \ArrayAccess;
+use ArrayAccess;
+use JsonSerializable;
 {{/parentSchema}}
 {{/isEnum}}
-use \{{invokerPackage}}\ObjectSerializer;
+use {{invokerPackage}}\ObjectSerializer;
 
 /**
  * {{classname}} Class Doc Comment

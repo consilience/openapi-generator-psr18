@@ -1,4 +1,4 @@
-class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^parentSchema}}implements ModelInterface, ArrayAccess{{/parentSchema}}
+class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^parentSchema}}implements ModelInterface, ArrayAccess, JsonSerializable{{/parentSchema}}
 {
     const DISCRIMINATOR = {{#discriminator}}'{{discriminatorName}}'{{/discriminator}}{{^discriminator}}null{{/discriminator}};
 
@@ -405,9 +405,41 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
      */
     public function __toString()
     {
-        return json_encode(
-            ObjectSerializer::sanitizeForSerialization($this),
-            JSON_PRETTY_PRINT
-        );
+        return json_encode($this, JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * Return the JSON serialisable data for this model.
+     *
+     * @return string|object
+     */
+    public function jsonSerialize()
+    {
+        return ObjectSerializer::sanitizeForSerialization($this);
+    }
+
+    /**
+     * return a property value.
+     *
+     * @param string $name Name of the property
+     * @param mixed $default Value if property is not set
+     *
+     * @return mixed
+     */
+    public function get(string $name, $default = null)
+    {
+        return $this->container[$name] ?? $default;
+    }
+
+    /**
+     * Hangle magic getter to return properties.
+     *
+     * @param string $name Name of the property
+     *
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        return $this->get($name);
     }
 }
