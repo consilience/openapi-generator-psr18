@@ -19,8 +19,13 @@ namespace {{invokerPackage}};
  * Do not edit the class manually.
  */
 
-// PSR-7
+// PSR-18 client
 use Psr\Http\Client\ClientInterface;
+
+// Guzzle client
+use GuzzleHttp\ClientInterface as GuzzleClientInterface;
+
+// PSR-7
 use Psr\Http\Message\StreamInterface;
 
 // PSR-17
@@ -117,6 +122,20 @@ class Configuration
      * @var StreamFactoryInterface
      */
     protected $streamFactory;
+
+    /**
+     * The synchronous PSR-18 client.
+     *
+     * @var ClientInterface
+     */
+    protected $syncClient;
+
+    /**
+     * The asynchronous Guzzle client.
+     *
+     * @var GuzzleClientInterface
+     */
+    protected $asyncClient;
 
     /**
      * Constructor
@@ -542,6 +561,79 @@ class Configuration
     {
         return $this->uriFactory;
     }
+
+    /**
+     * Sets the Synchronous http client
+     *
+     * @param ClientInterface $syncClient
+     *
+     * @return $this
+     */
+    protected function setSyncClient(ClientInterface $syncClient)
+    {
+        $this->syncClient = $syncClient;
+        return $this;
+    }
+
+    /**
+     * Sets Synchronous http client
+     *
+     * @param ClientInterface $syncClient
+     *
+     * @return $this new instance
+     */
+    public function withSyncClient(ClientInterface $syncClient)
+    {
+        return $this->with('syncClient', $syncClient);
+    }
+
+    /**
+     * Gets Synchronous http client
+     *
+     * @return ClientInterface
+     */
+    public function getSyncClient(): ClientInterface
+    {
+        return $this->syncClient;
+    }
+
+
+
+    /**
+     * Sets the Asynchronous http client
+     *
+     * @param GuzzleClientInterface $syncClient
+     *
+     * @return $this
+     */
+    protected function setAsyncClient(GuzzleClientInterface $asyncClient)
+    {
+        $this->asyncClient = $asyncClient;
+        return $this;
+    }
+
+    /**
+     * Sets Asynchronous http client
+     *
+     * @param GuzzleClientInterface $asyncClient
+     *
+     * @return $this new instance
+     */
+    public function withAsyncClient(GuzzleClientInterface $asyncClient)
+    {
+        return $this->with('asyncClient', $asyncClient);
+    }
+
+    /**
+     * Gets Asynchronous http client
+     *
+     * @return GuzzleClientInterface
+     */
+    public function getAsyncClient(): GuzzleClientInterface
+    {
+        return $this->asyncClient;
+    }
+
 
     /**
      * Sets the Stream factory

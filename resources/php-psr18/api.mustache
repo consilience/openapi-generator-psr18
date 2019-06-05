@@ -34,7 +34,7 @@ use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
 // Guzzle
-use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 
 use {{invokerPackage}}\ApiException;
 use {{invokerPackage}}\Configuration;
@@ -51,11 +51,6 @@ use {{invokerPackage}}\ObjectSerializer;
  */
 {{#operations}}class {{classname}}
 {
-    /**
-     * @var ClientInterface
-     */
-    protected $client;
-
     /**
      * @var Configuration
      */
@@ -87,13 +82,11 @@ use {{invokerPackage}}\ObjectSerializer;
      * @param int             $hostIndex (Optional) host index to select the list of hosts if defined in the OpenAPI spec
      */
     public function __construct(
-        $client,
         Configuration $config = null,
         HeaderSelector $selector = null,
         $hostIndex = 0
     ) {
-        $this->client = $client;
-        $this->config = $config ?: new Configuration();
+        $this->setConfig($config ?: new Configuration());
         $this->headerSelector = $selector ?: new HeaderSelector();
         $this->hostIndex = $hostIndex;
     }
@@ -124,6 +117,26 @@ use {{invokerPackage}}\ObjectSerializer;
     public function getConfig()
     {
         return $this->config;
+    }
+
+    /**
+     * @param Configuration $config
+     * @return $this
+     */
+    protected function setConfig(Configuration $config)
+    {
+        $this->config = $config;
+        return $this;
+    }
+
+    /**
+     * @param Configuration $config
+     * @return $this
+     */
+    protected function withConfig(Configuration $config)
+    {
+        $clone = clone $this;
+        return $clone->setConfig($config);
     }
 
 {{#operation}}
@@ -202,18 +215,12 @@ use {{invokerPackage}}\ObjectSerializer;
         $request = $this->{{operationId}}Request({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});
 
         try {
-             try {
-                if ($this->client instanceof ClientInterface) {
-                    // PSR-18 client.
+            try {
+                // Get a PSR-18 synchronous client.
 
-                    $response = $this->client->sendRequest($request);
-                } elseif ($this->client instanceof  GuzzleClient) {
-                    // Guzzle client.
+                $client = $this->getSyncClient();
 
-                    $response = $this->client->send($request);
-                } else {
-                    // TODO: No suitable client, so thrown exception.
-                }
+                $response = $client->sendRequest($request);
             } catch (RequestExceptionInterface $e) {
                 // CHECKME: is this what the Guzzle client would throw too?
                 // This $e->getResponse() - is that PSR-7 or just what the Guzzle exception provides?
@@ -724,6 +731,22 @@ use {{invokerPackage}}\ObjectSerializer;
         $uriFactory = $this->config->getUriFactory();
 
         return $uriFactory->createUri($uri);
+    }
+
+    /**
+     * Get a synchronous client.
+     */
+    protected function getSyncClient(): ClientInterface
+    {
+        return $this->config->getSyncClient();
+    }
+
+    /**
+     * Get an asynchronous client.
+     */
+    protected function getAsyncClient(): GuzzleClientInterface
+    {
+        return $this->config->getAsyncClient();
     }
 
     /**

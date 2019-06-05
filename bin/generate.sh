@@ -1,6 +1,9 @@
 #!/bin/bash
 
+#
 # Generate a PSR-18 client for an OpenAPI spec.
+# Uses a few opinionated defaults, but we are just getting to know the tool.
+#
 
 die () {
     echo >&2 "$@"
@@ -26,12 +29,12 @@ export BASENAME=`basename ${SPEC}`
 export FILEEXT=${BASENAME##*.}
 export FILEBASE=${BASENAME%.*}
 
-java -jar openapi-generator-cli-4.0.0.jar generate \
+java -jar "${DIR}/openapi-generator-cli-4.0.0.jar" generate \
 	-i "${SPEC}" \
-	-t ${DIR}/resources/php-psr18 \
-	-o "${DIR}/generated/${FILEBASE}" \
+	-t "${DIR}/../resources/php-psr18" \
+	-o "${DIR}/../generated/${FILEBASE}" \
 	-g php \
 	--additional-properties=srcBasePath=src \
 	--additional-properties=variableNamingConvention=camelCase \
-	--additional-properties=invokerPackage="$NAMESPACE"
+	--additional-properties=invokerPackage="${NAMESPACE}"
 

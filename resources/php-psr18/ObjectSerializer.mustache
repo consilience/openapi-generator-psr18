@@ -404,7 +404,7 @@ class ObjectSerializer
 
             // Try a getter.
 
-            $getterName = get . ucfirst($name);
+            $getterName = 'get' . ucfirst($name);
 
             if (method_exists($data, $getterName)) {
                 return $data->{$getterName};
