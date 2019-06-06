@@ -5,19 +5,31 @@
 # Uses a few opinionated defaults, but we are just getting to know the tool.
 #
 
-die () {
-    echo >&2 "$@"
-    exit 1
-}
+for i in "$@"
+do
+    case $i in
+        -g=*|--generated=*)
+            GENERATED="${i#*=}"
+            shift
+            ;;
+        -s=*|--spec=*|--specification=*)
+            SPEC="${i#*=}"
+            shift
+            ;;
+        -n=*|--namespace=*)
+            NAMESPACE="${i#*=}"
+            shift
+            ;;
+        *)
+    esac
+done
 
-[ "$#" -ge 1 ] || die "$0 openapi-spec [namespace] [package-name]"
+[ -f "${SPEC}" ] || die "OpenAPI specification file '${SPEC}' not found"
 
-[ -f "$1" ] || die "OpenAPI specification file '$1' not found"
+NAMESPACE=${NAMESPACE:-"OpenAPI\\Client"}
 
-SPEC="$1"
-
-NAMESPACE=${2:-"OpenAPI\\Client"}
-
+# FIXME: cannot seem to find the parameters or variables for setting the
+# composer package name of the generated code.
 #PACKAGE=${3:-"vendor/package"}
 #export GIT_USER_ID=vendor
 
@@ -25,14 +37,26 @@ NAMESPACE=${2:-"OpenAPI\\Client"}
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-export BASENAME=`basename ${SPEC}`
-export FILEEXT=${BASENAME##*.}
-export FILEBASE=${BASENAME%.*}
+# FILEBASE is the basename of the spec.
+
+BASENAME=`basename "${SPEC}"`
+FILEEXT="${BASENAME##*.}"
+FILEBASE="${BASENAME%.*}"
+
+# The generated code root directory.
+# Use as supplied, or default.
+
+DEFAULT_GENERATED="${DIR}/../generated/${FILEBASE}"
+GENERATED=${GENERATED:-${DEFAULT_GENERATED}}
+
+[ ! -d "${GENERATED}" ] && [ -d `dirname "${GENERATED}"` ] && mkdir "${GENERATED}"
+
+[ -d "${GENERATED}" ] || die "Generation root directory '${GENERATED}' not found"
 
 java -jar "${DIR}/openapi-generator-cli-4.0.0.jar" generate \
 	-i "${SPEC}" \
 	-t "${DIR}/../resources/php-psr18" \
-	-o "${DIR}/../generated/${FILEBASE}" \
+	-o "${GENERATED}" \
 	-g php \
 	--additional-properties=srcBasePath=src \
 	--additional-properties=variableNamingConvention=camelCase \
