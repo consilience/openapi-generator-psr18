@@ -1,0 +1,14 @@
+{
+    "name": "consilience/openapi-generator-psr18",
+    "description": "Generate PSR-18 client and models for OpenAPI spec",
+    "type": "tool",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jason Judge",
+            "email": "jason.judge@consil.co.uk"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
