@@ -239,7 +239,7 @@ use {{invokerPackage}}\ObjectSerializer;
             // carry a payload with details of the problem that the application
             // may need to know.
 
-            if ($statusCode < 200 || $statusCode > 299) {
+            /*if ($statusCode < 200 || $statusCode > 299) {
                 throw new ApiException(
                     sprintf(
                         '[%d] Error connecting to the API (%s)',
@@ -250,7 +250,7 @@ use {{invokerPackage}}\ObjectSerializer;
                     $response->getHeaders(),
                     $response->getBody()
                 );
-            }
+            }*/
             {{#returnType}}
         {{#responses}}
             {{#-first}}
@@ -281,6 +281,21 @@ use {{invokerPackage}}\ObjectSerializer;
             }
             {{/-last}}
         {{/responses}}
+
+            // CHECKME: does this belong here? Not convinced.
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    $response->getBody()
+                );
+            }
 
             $returnType = '{{returnType}}';
             $responseBody = $response->getBody();
