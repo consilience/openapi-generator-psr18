@@ -1,5 +1,10 @@
 #!/bin/bash
 
+die() {
+    echo "$*" 1>&2
+    exit 1;
+}
+
 #
 # Generate a PSR-18 client for an OpenAPI spec.
 # Uses a few opinionated defaults, but we are just getting to know the tool.
@@ -19,6 +24,16 @@ do
         -n=*|--namespace=*)
             NAMESPACE="${i#*=}"
             shift
+            ;;
+        -?|--help)
+            echo Usage:
+            echo "  " `basename $0`
+            echo
+            echo Options:
+            echo "  -g, --generated=desination-directory"
+            echo "  -s, --spec=source-openapi-spec"
+            echo "  -n, --namespace=root-namespace"
+            exit 0
             ;;
         *)
     esac
@@ -54,11 +69,12 @@ GENERATED=${GENERATED:-${DEFAULT_GENERATED}}
 [ -d "${GENERATED}" ] || die "Generation root directory '${GENERATED}' not found"
 
 java -jar "${DIR}/openapi-generator-cli-4.0.0.jar" generate \
-	-i "${SPEC}" \
-	-t "${DIR}/../resources/php-psr18" \
-	-o "${GENERATED}" \
-	-g php \
-	--additional-properties=srcBasePath=src \
-	--additional-properties=variableNamingConvention=camelCase \
-	--additional-properties=invokerPackage="${NAMESPACE}"
+    -i "${SPEC}" \
+    -t "${DIR}/../modules/openapi-generator/src/main/resources/php-psr18" \
+    -o "${GENERATED}" \
+    -g php \
+    --additional-properties=srcBasePath=src \
+    --additional-properties=variableNamingConvention=camelCase \
+    --additional-properties=invokerPackage="${NAMESPACE}"
+
 
