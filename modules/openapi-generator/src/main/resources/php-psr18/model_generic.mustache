@@ -1,3 +1,4 @@
+{{! <?php }}
 class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^parentSchema}}implements ModelInterface, ArrayAccess, JsonSerializable{{/parentSchema}}
 {
     const DISCRIMINATOR = {{#discriminator}}'{{discriminatorName}}'{{/discriminator}}{{^discriminator}}null{{/discriminator}};
