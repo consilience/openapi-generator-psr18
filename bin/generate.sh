@@ -68,7 +68,7 @@ GENERATED=${GENERATED:-${DEFAULT_GENERATED}}
 
 [ -d "${GENERATED}" ] || die "Generation root directory '${GENERATED}' not found"
 
-java -jar "${DIR}/openapi-generator-cli-4.0.0.jar" generate \
+java -jar "${DIR}/openapi-generator-cli.jar" generate \
     -i "${SPEC}" \
     -t "${DIR}/../modules/openapi-generator/src/main/resources/php-psr18" \
     -o "${GENERATED}" \
