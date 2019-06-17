@@ -13,26 +13,23 @@ current models do not support.
 
 ## Generating the Package
 
-During development, the following command is used to generate the code.
-This will be developed and is likely to change.
+The command `bin\generate.sh` will generate the PSR-18 code. It takes options:
 
-```bash
-java -jar openapi-generator-cli-4.0.0.jar generate \
-    -i my-openapi-spec.json \
-    -t resources/php-psr18 \
-    -o generated/php-psr18 \
-    -g php \
-    --additional-properties=srcBasePath=src \
-    --additional-properties=variableNamingConvention=camelCase
-```
+* -g, --generated=desination-directory
+* -s, --spec=source-openapi-spec
+* -n, --namespace=root-namespace
 
-The templates being developed are under `resources/php-psr18`.
+The `spec` is mandatory, but is still an option for now.
+
+The templates being developed are under `modules/openapi-generator/src/main/resources/php-psr18/`.
+
 The templates are taken from
 https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator/src/main/resources/php
 
 The `php` generator uses the logic defined in
 https://github.com/OpenAPITools/openapi-generator/blob/master/modules/openapi-generator/src/main/java/org/openapitools/codegen/languages/PhpClientCodegen.java
 
-The java file, for a quick start, can be downloaded from
-http://central.maven.org/maven2/org/openapitools/openapi-generator-cli/4.0.0/openapi-generator-cli-4.0.0.jar
-You may wish to rename it `openapi-generator-cli.jar` to keep with the project conventions.
+The latest java command can be downloaded from
+http://central.maven.org/maven2/org/openapitools/openapi-generator-cli/4.0.1/openapi-generator-cli-4.0.1.jar
+and is renamed to `openapi-generator-cli.jar` to keep with the project conventions.
+
