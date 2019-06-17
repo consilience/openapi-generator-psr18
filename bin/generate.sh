@@ -25,6 +25,10 @@ do
             NAMESPACE="${i#*=}"
             shift
             ;;
+        -r=*|--resources=*)
+            RESOURCES="${i#*=}"
+            shift
+            ;;
         -?|--help)
             echo Usage:
             echo "  " `basename $0`
@@ -33,6 +37,7 @@ do
             echo "  -g, --generated=desination-directory"
             echo "  -s, --spec=source-openapi-spec"
             echo "  -n, --namespace=root-namespace"
+            echo "  -r, --resources=resource-templates-directory"
             exit 0
             ;;
         *)
@@ -58,6 +63,8 @@ BASENAME=`basename "${SPEC}"`
 FILEEXT="${BASENAME##*.}"
 FILEBASE="${BASENAME%.*}"
 
+RESOURCES=${RESOURCES:-"${DIR}/../modules/openapi-generator/src/main/resources/php-psr18"}
+
 # The generated code root directory.
 # Use as supplied, or default.
 
@@ -70,7 +77,7 @@ GENERATED=${GENERATED:-${DEFAULT_GENERATED}}
 
 java -jar "${DIR}/openapi-generator-cli.jar" generate \
     -i "${SPEC}" \
-    -t "${DIR}/../modules/openapi-generator/src/main/resources/php-psr18" \
+    -t "${RESOURCES}" \
     -o "${GENERATED}" \
     -g php \
     --additional-properties=srcBasePath=src \
