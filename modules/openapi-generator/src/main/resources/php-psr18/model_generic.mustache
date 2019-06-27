@@ -188,7 +188,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         {{#vars}}
         {{#required}}
         if ($this->container['{{name}}'] === null) {
-            $invalidProperties[] = "'{{name}}' can't be null";
+            $invalidProperties[] = sprintf('"%s" can\'t be null', '{{name}}');
         }
         {{/required}}
         {{#isEnum}}
@@ -196,8 +196,9 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         $allowedValues = $this->{{getter}}AllowableValues();
         if (!is_null($this->container['{{name}}']) && !in_array($this->container['{{name}}'], $allowedValues, true)) {
             $invalidProperties[] = sprintf(
-                "invalid value for '{{name}}', must be one of '%s'",
-                implode("', '", $allowedValues)
+                'invalid value for "%s", must be one of "%s"',
+                '{{name}}',
+                implode('", "', $allowedValues)
             );
         }
 
@@ -206,43 +207,71 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         {{#hasValidation}}
         {{#maxLength}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}(mb_strlen($this->container['{{name}}']) > {{maxLength}})) {
-            $invalidProperties[] = "invalid value for '{{name}}', the character length must be smaller than or equal to {{{maxLength}}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", the character length must be smaller than or equal to %d.',
+                '{{name}}',
+                {{{maxLength}}}
+            );
         }
 
         {{/maxLength}}
         {{#minLength}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}(mb_strlen($this->container['{{name}}']) < {{minLength}})) {
-            $invalidProperties[] = "invalid value for '{{name}}', the character length must be bigger than or equal to {{{minLength}}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", the character length must be bigger than or equal to %d.',
+                '{{name}}',
+                {{{minLength}}}
+            );
         }
 
         {{/minLength}}
         {{#maximum}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}($this->container['{{name}}'] >{{#exclusiveMaximum}}={{/exclusiveMaximum}} {{maximum}})) {
-            $invalidProperties[] = "invalid value for '{{name}}', must be smaller than {{^exclusiveMaximum}}or equal to {{/exclusiveMaximum}}{{maximum}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", must be smaller than {{^exclusiveMaximum}}or equal to {{/exclusiveMaximum}}%d.',
+                '{{name}}',
+                {{maximum}}
+            );
         }
 
         {{/maximum}}
         {{#minimum}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}($this->container['{{name}}'] <{{#exclusiveMinimum}}={{/exclusiveMinimum}} {{minimum}})) {
-            $invalidProperties[] = "invalid value for '{{name}}', must be bigger than {{^exclusiveMinimum}}or equal to {{/exclusiveMinimum}}{{minimum}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", must be bigger than {{^exclusiveMinimum}}or equal to {{/exclusiveMinimum}}%d.',
+                '{{name}}',
+                {{minimum}}
+            );
         }
 
         {{/minimum}}
         {{#pattern}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}!preg_match("{{{pattern}}}", $this->container['{{name}}'])) {
-            $invalidProperties[] = "invalid value for '{{name}}', must be conform to the pattern {{{pattern}}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", must be conform to the pattern "%s".',
+                '{{name}}',
+                '{{{pattern}}}'
+            };
         }
 
         {{/pattern}}
         {{#maxItems}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}(count($this->container['{{name}}']) > {{maxItems}})) {
-            $invalidProperties[] = "invalid value for '{{name}}', number of items must be less than or equal to {{{maxItems}}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", number of items must be less than or equal to %d.',
+                '{{name}}',
+                {{{maxItems}}}
+            );
         }
 
         {{/maxItems}}
         {{#minItems}}
         if ({{^required}}!is_null($this->container['{{name}}']) && {{/required}}(count($this->container['{{name}}']) < {{minItems}})) {
-            $invalidProperties[] = "invalid value for '{{name}}', number of items must be greater than or equal to {{{minItems}}}.";
+            $invalidProperties[] = sprintf(
+                'invalid value for "%s", number of items must be greater than or equal to %d.',
+                '{{name}}',
+                {{{minItems}}}
+            );
         }
 
         {{/minItems}}
@@ -289,8 +318,9 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         if ({{^required}}!is_null(${{name}}) && {{/required}}!in_array(${{{name}}}, $allowedValues, true)) {
             throw new \InvalidArgumentException(
                 sprintf(
-                    "Invalid value for '{{name}}', must be one of '%s'",
-                    implode("', '", $allowedValues)
+                    'Invalid value for "%s", must be one of "%s"',
+                    '{{name}}',
+                    implode('", "', $allowedValues)
                 )
             );
         }
@@ -299,8 +329,9 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         if ({{^required}}!is_null(${{name}}) && {{/required}}array_diff(${{{name}}}, $allowedValues)) {
             throw new \InvalidArgumentException(
                 sprintf(
-                    "Invalid value for '{{name}}', must be one of '%s'",
-                    implode("', '", $allowedValues)
+                    'Invalid value for "%s", must be one of "%s"',
+                    '{{name}}',
+                    implode('", "', $allowedValues)
                 )
             );
         }
