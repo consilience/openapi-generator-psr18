@@ -22,6 +22,7 @@ namespace {{apiPackage}};
 // PSR-18
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\RequestExceptionInterface;
+use Psr\Http\Client\NetworkExceptionInterface;
 
 // PSR-7
 use Psr\Http\Message\RequestInterface;
@@ -40,6 +41,8 @@ use {{invokerPackage}}\ApiException;
 use {{invokerPackage}}\Configuration;
 use {{invokerPackage}}\HeaderSelector;
 use {{invokerPackage}}\ObjectSerializer;
+
+use InvalidArgumentException;
 
 /**
  * {{classname}} Class Doc Comment
@@ -141,7 +144,7 @@ use {{invokerPackage}}\ObjectSerializer;
 
 {{#operation}}
 {{>api_sync}}
-{{>api_async}}
+{{!>api_async!}}{{! Note: async is disabled for now as we are not using it !}}
 {{>api_request}}
 {{/operation}}
 

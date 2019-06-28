@@ -28,13 +28,29 @@
 {{/allParams}}
      *
      * @throws \{{invokerPackage}}\ApiException on non-2xx response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @return {{#returnType}}{{#responses}}{{#dataType}}{{^-first}}|{{/-first}}{{/dataType}}{{{dataType}}}{{/responses}}{{/returnType}}{{^returnType}}void{{/returnType}}
      */
     public function {{operationId}}({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{^required}} = {{#defaultValue}}{{{.}}}{{/defaultValue}}{{^defaultValue}}null{{/defaultValue}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}})
     {
-        {{#returnType}}list($response) = {{/returnType}}$this->{{operationId}}WithHttpInfo({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});{{#returnType}}
-        return $response;{{/returnType}}
+        {{#returnType}}list($responseData, $requestMessage, $responseMessage) = {{/returnType}}$this->{{operationId}}WithHttpInfo({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});{{#returnType}}
+
+        $statusCode = (int)$responseMessage->getStatusCode();
+
+        if ($statusCode < 200 || $statusCode > 299) {
+            throw new ApiException(
+                sprintf(
+                    '[%d] Error connecting to the API (%s)',
+                    $statusCode,
+                    $requestMessage->getUri()
+                ),
+                $statusCode,
+                $requestMessage,
+                $responseMessage
+            );
+        }
+
+        return $responseData;{{/returnType}}
     }
 
     /**
@@ -66,109 +82,52 @@
 {{/allParams}}
      *
      * @throws \{{invokerPackage}}\ApiException on non-2xx response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
+     * @throws RequestExceptionInterface if the request is malformed
+     * @throws NetworkExceptionInterface if the network is down
      * @return array of {{#returnType}}{{#responses}}{{#dataType}}{{^-first}}|{{/-first}}{{/dataType}}{{{dataType}}}{{/responses}}{{/returnType}}{{^returnType}}null{{/returnType}}, HTTP status code, HTTP response headers (array of strings)
      */
     public function {{operationId}}WithHttpInfo({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{^required}} = {{#defaultValue}}{{{.}}}{{/defaultValue}}{{^defaultValue}}null{{/defaultValue}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}})
     {
         $request = $this->{{operationId}}Request({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});
 
-        try {
-            try {
-                // Use the PSR-18 synchronous client.
+        $response = $this->getSyncClient()->sendRequest($request);
 
-                $response = $this->getSyncClient()->sendRequest($request);
-            } catch (RequestExceptionInterface $e) {
-                // CHECKME: is this what the Guzzle client would throw too?
-                // This $e->getResponse() - is that PSR-7 or just what the Guzzle exception provides?
+        $statusCode = (int)$response->getStatusCode();
 
-                throw new ApiException(
-                    "[{$e->getCode()}] {$e->getMessage()}",
-                    $e->getCode(),
-                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
-                    $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null
-                );
-            }
+        {{#returnType}}
+    {{#responses}}
+        {{#-first}}
 
-            $statusCode = (int)$response->getStatusCode();
+        $responseBody = $response->getBody();
 
-            {{#returnType}}
-        {{#responses}}
-            {{#-first}}
-
-            $responseBody = $response->getBody();
-            switch($statusCode) {
-            {{/-first}}
-            {{#dataType}}
-                {{^isWildcard}}case {{code}}:{{/isWildcard}}{{#isWildcard}}default:{{/isWildcard}}
-                    // The response body will always be Psr\Http\Message\StreamInterface
-
-                    if ('{{dataType}}' === '\SplFileObject') {
-                        // Data type maps to "file" in the spec.
-                        $content = $responseBody;
-                    } else {
-                        $content = (string)$responseBody;
-                    }
-
-                    return [
-                        ObjectSerializer::deserialize($content, '{{dataType}}', $response->getHeaders()),
-                        $statusCode,
-                        $response->getHeaders()
-                    ];
-            {{/dataType}}
-            {{#-last}}
-            }
-            {{/-last}}
-        {{/responses}}
-
-            if ($statusCode < 200 || $statusCode > 299) {
-                throw new ApiException(
-                    sprintf(
-                        '[%d] Error connecting to the API (%s)',
-                        $statusCode,
-                        $request->getUri()
-                    ),
-                    $statusCode,
-                    $response->getHeaders(),
-                    $response->getBody()
-                );
-            }
-
-            $returnType = '{{returnType}}';
-            $responseBody = $response->getBody();
-            if ($returnType === '\SplFileObject') {
-                // Stream goes to deserializer
-                $content = $responseBody;
-            } else {
-                $content = (string)$responseBody;
-            }
-
-            return [
-                ObjectSerializer::deserialize($content, $returnType, []),
-                $response->getStatusCode(),
-                $response->getHeaders()
-            ];
-            {{/returnType}}
-            {{^returnType}}
-
-            return [null, $statusCode, $response->getHeaders()];
-            {{/returnType}}
-
-        } catch (ApiException $e) {
-            switch ($e->getCode()) {
-        {{#responses}}
-            {{#dataType}}
-                {{^isWildcard}}case {{code}}:{{/isWildcard}}{{#isWildcard}}default:{{/isWildcard}}
-                    $data = ObjectSerializer::deserialize(
-                        $e->getResponseBody(),
-                        '{{dataType}}',
-                        $e->getResponseHeaders()
-                    );
-                    $e->setResponseObject($data);
-                    break;
-            {{/dataType}}
-        {{/responses}}
-            }
-            throw $e;
+        switch($statusCode) {
+        {{/-first}}
+        {{#dataType}}
+            {{^isWildcard}}case {{code}}:{{/isWildcard}}{{#isWildcard}}default:{{/isWildcard}}
+                return [
+                    ObjectSerializer::deserialize($response, '{{dataType}}'),
+                    $request,
+                    $response
+                ];
+        {{/dataType}}
+        {{#-last}}
         }
+        {{/-last}}
+    {{/responses}}
+
+        $returnType = '{{returnType}}';
+
+        return [
+            ObjectSerializer::deserialize($response, $returnType),
+            $request,
+            $response
+        ];
+        {{/returnType}}
+        {{^returnType}}
+
+        // No expected payload.
+
+        return [null, $request, $response];
+        {{/returnType}}
     }

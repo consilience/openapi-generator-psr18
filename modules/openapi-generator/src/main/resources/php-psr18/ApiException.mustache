@@ -19,6 +19,8 @@ namespace {{invokerPackage}};
  * Do not edit the class manually.
  */
 
+use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\RequestInterface;
 use \Exception;
 
 /**
@@ -33,18 +35,18 @@ class ApiException extends Exception
 {
 
     /**
-     * The HTTP body of the server response either as Json or string.
+     * The PSR-7 request.
      *
-     * @var mixed
+     * @var RequestInterface
      */
-    protected $responseBody;
+    protected $request;
 
     /**
-     * The HTTP header of the server response.
+     * The PSR-7 response.
      *
-     * @var string[]|null
+     * @var MessageInterface
      */
-    protected $responseHeaders;
+    protected $response;
 
     /**
      * The deserialized response object
@@ -56,36 +58,68 @@ class ApiException extends Exception
     /**
      * Constructor
      *
-     * @param string        $message         Error message
-     * @param int           $code            HTTP status code
-     * @param string[]|null $responseHeaders HTTP response header
-     * @param mixed         $responseBody    HTTP decoded body of the server response either as \stdClass or string
+     * @param string            $message        Error message
+     * @param int               $code           HTTP status code
+     * @param RequestInterface  $request        PSR-7 Request
+     * @param MessageInterface  $response       PSR-7 Response or ServerRequest
+     * @param mixed             $responseObject The deserialised model payload, scalar StreamInterface or null
      */
-    public function __construct($message = "", $code = 0, $responseHeaders = [], $responseBody = null)
-    {
+    public function __construct(
+        $message = '',
+        $code = 0,
+        ?RequestInterface $request = null,
+        ?MessageInterface $response = null,
+        $responseObject = null
+    ) {
         parent::__construct($message, $code);
-        $this->responseHeaders = $responseHeaders;
-        $this->responseBody = $responseBody;
+
+        $this->request = $request;
+        $this->response = $response;
+        $this->responseObject = $responseObject;
     }
 
     /**
-     * Gets the HTTP response header
+     * Sets the HTTP request
      *
-     * @return string[]|null HTTP response header
+     * @paraem RequestInterface HTTP response header
+     * @return $this
      */
-    public function getResponseHeaders()
+    public function setRequest(RequestInterface $response)
     {
-        return $this->responseHeaders;
+        $this->response = $response;
+        return $this;
     }
 
     /**
-     * Gets the HTTP body of the server response either as Json or string
+     * Gets the request.
      *
-     * @return mixed HTTP body of the server response either as \stdClass or string
+     * @return RequestInterface The PSR-7 request
      */
-    public function getResponseBody()
+    public function getRequest()
     {
-        return $this->responseBody;
+        return $this->request;
+    }
+
+    /**
+     * Sets the HTTP response
+     *
+     * @paraem MessageInterface HTTP response header
+     * @return $this
+     */
+    public function setResponse(MessageInterface $response)
+    {
+        $this->response = $response;
+        return $this;
+    }
+
+    /**
+     * Gets the response payload, deserialised as well as possible.
+     *
+     * @return mixed The deserialised model payload, scalar or null
+     */
+    public function getResponse()
+    {
+        return $this->response;
     }
 
     /**
@@ -93,11 +127,12 @@ class ApiException extends Exception
      *
      * @param mixed $obj Deserialized response object
      *
-     * @return void
+     * @return $this
      */
     public function setResponseObject($obj)
     {
         $this->responseObject = $obj;
+        return $this;
     }
 
     /**
