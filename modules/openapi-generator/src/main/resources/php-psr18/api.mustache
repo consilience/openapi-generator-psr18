@@ -312,5 +312,60 @@ use InvalidArgumentException;
         }
         return $qs ? (string) substr($qs, 0, -1) : '';
     }
+
+    function buildHttpRequest(
+        array $headerParams,
+        array $headers,
+        array $queryParams,
+        $httpBody,
+        string $method
+    ) {
+        $defaultHeaders = [];
+
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        {{! CHECKME: does this context vary per endpoint? !}}
+        {{#servers.0}}
+        $operationHosts = [{{#servers}}"{{{url}}}"{{^-last}}, {{/-last}}{{/servers}}];
+        if ($this->hostIndex < 0 || $this->hostIndex >= sizeof($operationHosts)) {
+            throw new InvalidArgumentException(sprintf(
+                'Invalid index %d when selecting the host. Must be less than %d.',
+                $this->hostIndex,
+                sizeof($operationHosts)
+            ));
+        }
+        $operationHost = $operationHosts[$this->hostIndex];
+        {{/servers.0}}
+
+        $url = $this->createUri({{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath);
+
+        if ($queryParams) {
+            $url = $url->withQuery($this->buildQuery($queryParams));
+        }
+
+        $request = $this->createRequest($method, $url);
+
+        if ($headers) {
+            foreach ($headers as $name => $value) {
+                $request = $request->withHeader($name, $value);
+            }
+        }
+
+        // Add the body if set.
+
+        if ($httpBody) {
+            $request = $request->withBody($httpBody);
+        }
+
+        return $request;
+    }
 }
 {{/operations}}

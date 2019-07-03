@@ -269,6 +269,21 @@
         {{/isOAuth}}
         {{/authMethods}}
 
+
+
+
+        return $this->buildHttpRequest(
+            $headerParams,
+            $headers,
+            $queryParams,
+            $httpBody,
+            '{{httpMethod}}'
+        );
+
+
+
+
+
         $defaultHeaders = [];
         if ($this->config->getUserAgent()) {
             $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
@@ -283,7 +298,11 @@
         {{#servers.0}}
         $operationHosts = [{{#servers}}"{{{url}}}"{{^-last}}, {{/-last}}{{/servers}}];
         if ($this->hostIndex < 0 || $this->hostIndex >= sizeof($operationHosts)) {
-            throw new InvalidArgumentException("Invalid index {$this->hostIndex} when selecting the host. Must be less than ".sizeof($operationHosts));
+            throw new InvalidArgumentException(sprintf(
+                'Invalid index %d when selecting the host. Must be less than %d.',
+                $this->hostIndex,
+                sizeof($operationHosts)
+            ));
         }
         $operationHost = $operationHosts[$this->hostIndex];
         {{/servers.0}}
