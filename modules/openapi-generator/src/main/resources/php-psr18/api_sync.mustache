@@ -33,24 +33,25 @@
      */
     public function {{operationId}}({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{^required}} = {{#defaultValue}}{{{.}}}{{/defaultValue}}{{^defaultValue}}null{{/defaultValue}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}})
     {
-        {{#returnType}}list($responseData, $requestMessage, $responseMessage) = {{/returnType}}$this->{{operationId}}WithHttpInfo({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});{{#returnType}}
+        {{#returnType}}['model' => $model, 'request' => $request, 'response' => $response]
+            = {{/returnType}}$this->{{operationId}}WithHttpInfo({{^vendorExtensions.x-group-parameters}}{{#allParams}}${{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{/vendorExtensions.x-group-parameters}}{{#vendorExtensions.x-group-parameters}}$associative_array{{/vendorExtensions.x-group-parameters}});{{#returnType}}
 
-        $statusCode = (int)$responseMessage->getStatusCode();
+        $statusCode = (int)$response->getStatusCode();
 
         if ($statusCode < 200 || $statusCode > 299) {
             throw new ApiException(
                 sprintf(
                     '[%d] Error connecting to the API (%s)',
                     $statusCode,
-                    $requestMessage->getUri()
+                    $request->getUri()
                 ),
                 $statusCode,
-                $requestMessage,
-                $responseMessage
+                $request,
+                $response
             );
         }
 
-        return $responseData;{{/returnType}}
+        return $model;{{/returnType}}
     }
 
     /**
@@ -94,21 +95,18 @@
         $response = $this->getSyncClient()->sendRequest($request);
 
         $statusCode = (int)$response->getStatusCode();
-
         {{#returnType}}
     {{#responses}}
         {{#-first}}
-
-        $responseBody = $response->getBody();
 
         switch($statusCode) {
         {{/-first}}
         {{#dataType}}
             {{^isWildcard}}case {{code}}:{{/isWildcard}}{{#isWildcard}}default:{{/isWildcard}}
                 return [
-                    ObjectSerializer::deserialize($response, '{{dataType}}'),
-                    $request,
-                    $response
+                    'model' => ObjectSerializer::deserialize($response, '{{dataType}}'),
+                    'request' => $request,
+                    'response' => $response
                 ];
         {{/dataType}}
         {{#-last}}
