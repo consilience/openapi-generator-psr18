@@ -119,15 +119,19 @@
         $returnType = '{{returnType}}';
 
         return [
-            ObjectSerializer::deserialize($response, $returnType),
-            $request,
-            $response
+            'model' => ObjectSerializer::deserialize($response, $returnType),
+            'request' => $request,
+            'response' => $response
         ];
         {{/returnType}}
         {{^returnType}}
 
         // No expected payload.
 
-        return [null, $request, $response];
+        return [
+            'model' => null,
+            'request' => $request,
+            'response' => $response
+        ];
         {{/returnType}}
     }

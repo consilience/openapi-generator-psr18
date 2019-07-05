@@ -254,9 +254,20 @@ class ObjectSerializer
         if ($data instanceof MessageInterface) {
             // If a PSR-7 message, then unwrap the message.
 
-            // FIXME: can we decode the JSON at this point?
+            // The body at this point is a stream.
+            // We can decode it depending on the headers.
 
-            return static::deserialize($data->getBody(), $class, $data->getHeaders());
+            $body = $data->getBody();
+
+            $contentType = $data->getHeaderLine('Content-Type');
+
+            if (preg_match('#^application/.*json#', $contentType)) {
+                // "application/json" or "application/error+json" with optional ";utf-8" suffix.
+
+                $body = json_decode((string)$body);
+            }
+
+            return static::deserialize($body, $class, $data->getHeaders());
         }
 
         if ($class !== '\SplFileObject' && $data instanceof StreamInterface) {
