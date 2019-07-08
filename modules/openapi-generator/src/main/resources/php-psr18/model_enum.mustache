@@ -4,8 +4,9 @@ class {{classname}}
     /**
      * Possible values of this enum
      */
-    {{#allowableValues}}{{#enumVars}}const {{{name}}} = {{{value}}};
-    {{/enumVars}}{{/allowableValues}}
+    {{#allowableValues}}{{#enumVars}}const {{{name}}} = {{{value}}};{{^-last}}
+    {{/-last}}{{/enumVars}}{{/allowableValues}}
+
     /**
      * Gets allowable values of the enum
      * @return string[]

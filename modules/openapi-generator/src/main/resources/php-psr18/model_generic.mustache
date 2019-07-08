@@ -51,8 +51,8 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     }
 
     /**
-     * Array of attributes where the key is the local name,
-     * and the value is the original name
+     * Attributes of form: local name => original name
+     * Local name is camelCase, original name is as per API description
      *
      * @var string[]
      */
@@ -62,7 +62,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     ];
 
     /**
-     * Array of attributes to setter functions (for deserialization of responses)
+     * Attributes to setter functions
      *
      * @var string[]
      */
@@ -72,7 +72,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     ];
 
     /**
-     * Array of attributes to getter functions (for serialization of requests)
+     * Array of attributes to getter functions
      *
      * @var string[]
      */
@@ -93,7 +93,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     }
 
     /**
-     * Array of attributes to setter functions (for deserialization of responses)
+     * Array of attributes to setter functions
      *
      * @return array
      */
@@ -103,7 +103,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     }
 
     /**
-     * Array of attributes to getter functions (for serialization of requests)
+     * Array of attributes to accessor functions
      *
      * @return array
      */
@@ -122,10 +122,9 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         return self::$openAPIModelName;
     }
 
-    {{#vars}}{{#isEnum}}{{#allowableValues}}{{#enumVars}}const {{enumName}}_{{{name}}} = {{{value}}};
-    {{/enumVars}}{{/allowableValues}}{{/isEnum}}{{/vars}}
-
-    {{#vars}}{{#isEnum}}
+    {{#vars}}{{#isEnum}}{{#allowableValues}}{{#enumVars}}const {{enumName}}_{{{name}}} = {{{value}}};{{^-last}}
+    {{/-last}}{{/enumVars}}{{/allowableValues}}{{/isEnum}}{{/vars}}
+{{#vars}}{{#isEnum}}
     /**
      * Gets allowable values of the enum
      *
@@ -138,8 +137,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
             {{/-last}}{{/enumVars}}{{/allowableValues}}
         ];
     }
-    {{/isEnum}}{{/vars}}
-
+{{/isEnum}}{{/vars}}
     {{^parentSchema}}
     /**
      * Associative array for storing property values
@@ -162,7 +160,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
 
         {{/parentSchema}}
         {{#vars}}
-        $this->container['{{name}}'] = isset($data['{{name}}']) ? $data['{{name}}'] : {{#defaultValue}}{{{defaultValue}}}{{/defaultValue}}{{^defaultValue}}null{{/defaultValue}};
+        $this->container['{{name}}'] = $data['{{name}}'] ?? {{#defaultValue}}{{{defaultValue}}}{{/defaultValue}}{{^defaultValue}}null{{/defaultValue}};
         {{/vars}}
         {{#discriminator}}
 
@@ -300,7 +298,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
      */
     public function {{getter}}()
     {
-        return $this->container['{{name}}'];
+        return $this->get('{{name}}');
     }
 
     /**
@@ -377,6 +375,7 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
         return $this;
     }
     {{/vars}}
+
     /**
      * Returns true if offset exists. False otherwise.
      *
