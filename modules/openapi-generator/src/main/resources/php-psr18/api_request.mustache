@@ -128,12 +128,11 @@
         $resourcePath = '{{{path}}}';
         $formParams = [];
         $queryParams = [];
-        $headerParams = [];
-        $httpBody = '';
+        $httpBody = null;
         $multipart = false;
 
+        {{#queryParams.0}}// Query parameters{{/queryParams.0}}
         {{#queryParams}}
-        // query params
         {{#collectionFormat}}
         if (is_array(${{paramName}})) {
             ${{paramName}} = ObjectSerializer::serializeCollection(${{paramName}}, '{{collectionFormat}}', true);
@@ -142,21 +141,9 @@
         if (${{paramName}} !== null) {
             $queryParams['{{baseName}}'] = ObjectSerializer::toQueryValue(${{paramName}});
         }
-        {{/queryParams}}
-        {{#headerParams}}
-        // header params
-        {{#collectionFormat}}
-        if (is_array(${{paramName}})) {
-            ${{paramName}} = ObjectSerializer::serializeCollection(${{paramName}}, '{{collectionFormat}}');
-        }
-        {{/collectionFormat}}
-        if (${{paramName}} !== null) {
-            $headerParams['{{baseName}}'] = ObjectSerializer::toHeaderValue(${{paramName}});
-        }
-        {{/headerParams}}
+{{/queryParams}}
 
-        {{#pathParams}}
-        // path params
+{{#pathParams.0}}// Path parameters{{/pathParams.0}}{{#pathParams}}
         {{#collectionFormat}}
         if (is_array(${{paramName}})) {
             ${{paramName}} = ObjectSerializer::serializeCollection(${{paramName}}, '{{collectionFormat}}');
@@ -169,10 +156,9 @@
                 $resourcePath
             );
         }
-        {{/pathParams}}
+{{/pathParams}}
 
-        {{#formParams}}
-        // form params
+{{#formParams.0}}// Form parameters{{/formParams.0}}{{#formParams}}
         if (${{paramName}} !== null) {
             {{#isFile}}
             $multipart = true;
@@ -182,8 +168,9 @@
             $formParams['{{baseName}}'] = ObjectSerializer::toFormValue(${{paramName}});
             {{/isFile}}
         }
-        {{/formParams}}
-        // body params
+{{/formParams}}
+
+        // Body parameter
         $_tempBody = null;
         {{#bodyParams}}
         if (isset(${{paramName}})) {
@@ -201,6 +188,17 @@
                 [{{#consumes}}'{{{mediaType}}}'{{#hasMore}}, {{/hasMore}}{{/consumes}}]
             );
         }
+
+        {{#headerParams.0}}// Header parameters{{/headerParams.0}}{{#headerParams}}
+        {{#collectionFormat}}
+        if (is_array(${{paramName}})) {
+            ${{paramName}} = ObjectSerializer::serializeCollection(${{paramName}}, '{{collectionFormat}}');
+        }
+        {{/collectionFormat}}
+        if (${{paramName}} !== null) {
+            $headers['{{baseName}}'] = ObjectSerializer::toHeaderValue(${{paramName}});
+        }
+        {{/headerParams}}
 
         // For model (json/xml)
 
@@ -270,7 +268,6 @@
         {{/authMethods}}
 
         return $this->buildHttpRequest(
-            $headerParams,
             $headers,
             $queryParams,
             $httpBody,

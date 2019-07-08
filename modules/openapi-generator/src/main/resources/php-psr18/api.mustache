@@ -313,27 +313,27 @@ use InvalidArgumentException;
         return $qs ? (string) substr($qs, 0, -1) : '';
     }
 
-    function buildHttpRequest(
-        array $headerParams,
+    /**
+     * Build a HTTP message from the supplied parts.
+     *
+     * @param array $headers includes multipart headers, parameter headers, other headers
+     * @param array $query all query parameters
+     * @param StreamInterface body payload stream
+     * @param string $httpMethod
+     * @param string $resourcePath the path relative to the API base path
+     */
+    protected function buildHttpRequest(
         array $headers,
-        array $queryParams,
-        $httpBody,
-        string $method,
+        array $query,
+        ?StreamInterface $httpBody,
+        string $httpMethod,
         string $resourcePath
     ) {
-        $defaultHeaders = [];
-
         if ($this->config->getUserAgent()) {
-            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+            $headers['User-Agent'] = $this->config->getUserAgent();
         }
 
-        $headers = array_merge(
-            $defaultHeaders,
-            $headerParams,
-            $headers
-        );
-
-        {{! CHECKME: does this context vary per endpoint? !}}
+        {{! CHECKME: does or can this context vary per endpoint? !}}
         {{#servers.0}}
         $operationHosts = [{{#servers}}"{{{url}}}"{{^-last}}, {{/-last}}{{/servers}}];
         if ($this->hostIndex < 0 || $this->hostIndex >= sizeof($operationHosts)) {
@@ -348,16 +348,14 @@ use InvalidArgumentException;
 
         $url = $this->createUri({{^servers.0}}$this->config->getHost(){{/servers.0}}{{#servers.0}}$operationHost{{/servers.0}} . $resourcePath);
 
-        if ($queryParams) {
-            $url = $url->withQuery($this->buildQuery($queryParams));
+        if (count($query)) {
+            $url = $url->withQuery($this->buildQuery($query));
         }
 
-        $request = $this->createRequest($method, $url);
+        $request = $this->createRequest($httpMethod, $url);
 
-        if ($headers) {
-            foreach ($headers as $name => $value) {
-                $request = $request->withHeader($name, $value);
-            }
+        foreach ($headers as $name => $value) {
+            $request = $request->withHeader($name, $value);
         }
 
         // Add the body if set.
