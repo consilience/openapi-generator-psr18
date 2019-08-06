@@ -442,6 +442,8 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     /**
      * Convert to a nested array.
      * This is not an ideal method, and needs to be revisited.
+     *
+     * @return array
      */
     public function toArray()
     {
@@ -459,10 +461,10 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
     }
 
     /**
-     * return a property value.
+     * Return a property value.
      *
-     * @param string $name Name of the property
-     * @param mixed $default Value if property is not set
+     * @param string $name    Name of the property
+     * @param mixed  $default Value if property is not set
      *
      * @return mixed
      */
