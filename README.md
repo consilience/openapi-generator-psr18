@@ -30,6 +30,5 @@ The `php` generator uses the logic defined in
 https://github.com/OpenAPITools/openapi-generator/blob/master/modules/openapi-generator/src/main/java/org/openapitools/codegen/languages/PhpClientCodegen.java
 
 The latest java command can be downloaded from
-http://central.maven.org/maven2/org/openapitools/openapi-generator-cli/4.0.1/openapi-generator-cli-4.0.1.jar
-and is renamed to `openapi-generator-cli.jar` to keep with the project conventions.
+http://central.maven.org/maven2/org/openapitools/openapi-generator-cli/
 

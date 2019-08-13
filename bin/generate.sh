@@ -48,6 +48,9 @@ done
 
 NAMESPACE=${NAMESPACE:-"OpenAPI\\Client"}
 
+#EXECUTABLE="openapi-generator-cli-4.0.3.jar"
+EXECUTABLE="openapi-generator-cli-4.1.0.jar"
+
 # FIXME: cannot seem to find the parameters or variables for setting the
 # composer package name of the generated code.
 #PACKAGE=${3:-"vendor/package"}
@@ -75,7 +78,7 @@ GENERATED=${GENERATED:-${DEFAULT_GENERATED}}
 
 [ -d "${GENERATED}" ] || die "Generation root directory '${GENERATED}' not found"
 
-java -jar "${DIR}/openapi-generator-cli-4.0.3.jar" generate \
+java -jar "${DIR}/${EXECUTABLE}" generate \
     -i "${SPEC}" \
     -t "${RESOURCES}" \
     -o "${GENERATED}" \
@@ -83,5 +86,4 @@ java -jar "${DIR}/openapi-generator-cli-4.0.3.jar" generate \
     --additional-properties=srcBasePath=src \
     --additional-properties=variableNamingConvention=camelCase \
     --additional-properties=invokerPackage="${NAMESPACE}"
-
 
