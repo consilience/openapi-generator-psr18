@@ -179,7 +179,7 @@ use InvalidArgumentException;
     /**
      * Get a synchronous client.
      */
-    protected function getSyncClient(): ClientInterface
+    public function getSyncClient(): ClientInterface
     {
         return $this->config->getSyncClient();
     }
@@ -187,7 +187,7 @@ use InvalidArgumentException;
     /**
      * Get an asynchronous client.
      */
-    protected function getAsyncClient(): GuzzleClientInterface
+    public function getAsyncClient(): GuzzleClientInterface
     {
         return $this->config->getAsyncClient();
     }
